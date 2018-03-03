@@ -94,6 +94,282 @@ System Calls
 Ruby's Process.ppid maps to getppid(2)
 
 
+Chapter 5.
+
+Processes Have File Descriptors
+
+PIDS : Running Processes :: File Descriptors : Open Files
+
+Everything is a file.
+  -> Devices
+  -> Sockets
+  -> Pipes
+  -> Files
+...All are files.
+
+Since these are all files, we can refer to them as resources.
+Moving onwards, file will be meant in the traditional sense of files in an fs.
+
+
+
+Descriptors Represent Resources
+-------------------------------
+Anytime we open a resource in a running process, it is assigned a file descriptor.
+
+File descriptors are native to the processes they are bound to. Live by the process, die by the process.
+-> They can be shared only between related processes.
+
+Resources that are open act similarly; they are closed when the process exits.
+
+There are special semantics when sharing file descriptors in a process that gets forked.
+
+#{NOTE: 'In Ruby open file resources are represented by the IO class.
+         -> Any IO object can have an associated file descriptor number.
+         To get to them use:
+
+        ->   IO#fileno
+
+        For example in irb:
+
+        a =  File.open('/etc/passwd')
+        returns a file object ->  #<File:/etc/passwd>
+
+        Then:
+
+          puts a.fileno
+          #=> 12
+'
+}
+
+As seen above, 12 is the unique number.
+The Kernel uses this number to keep track of any resources the process is using.
+
+What happens when we have multiple resources open?
+
+passwd = File.open('/etc/passwd')
+puts passwd.fileno
+-> Gives 12
+
+hosts = File.open('/etc/hosts')
+puts hosts.fileno
+
+-> Gives 13
+
+passwd.close
+-> returns nothing but the file descriptor (or fd for short)
+   is released for the next opened resource to use, like so:
+
+null = File.open('/dev/null')
+null.fileno
+
+-> Gives 12
+
+KEY TAKEAWAYS
+-------------
+1. Fd descriptors are assigned the lowest unused value.
+
+2. Once a resource is closed, an fd becomes available again.
+
+3. Closed resources are not given a file descriptor.
+
+Since a closed file has no reason to interact with the hardware, Kernel has no reason to keep track of it.
+
+File descriptors are sometimes called open file descriptors. As opposed to a closed one? Misnomerous.
+
+Trying to read a file descriptor from a closed file will raise an exception.
+
+IOError: closed stream
+
+STD Streams:
+
+STDIN: provides a generic way to read input from keyboard device or pipes.
+
+STDOUT and STDERR: provide generic ways to write output to monitors, files, printers, etc.
+   -> This was an innovation of UNIX
+
+
+Before STDIN, the program needed keyboard drivers for all of the keyboards it wanted to support.
+
+If the program wanted to print something to the screen it needed to be able to manipulate pixels.
+
+puts STDIN.fileno
+puts STDOUT.fileno
+puts STDERR.fileno
+
+Gives:
+
+0
+1
+2
+
+Fd's are the core of network programming using sockets, pipes, etc and also at the core of FS operations.
+
+As such, they are used by every running process and are at the core of most of the beefy stuff in computing.
+
+Many methods on Ruby's IO class map to the same name:
+
+open(2), close(2), read(2), write(2), pipe(2), fysnc(2), stat(2) among others.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 """
